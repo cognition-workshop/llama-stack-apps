@@ -13,10 +13,8 @@ from typing import List
 
 import fire
 
-from examples.interior_design_assistant.utils import (
-    create_single_turn,
-    data_url_from_image,
-)
+from examples.interior_design_assistant.utils import create_single_turn
+from examples.common.utils import data_url_from_file
 
 from llama_stack_client import LlamaStackClient
 from llama_stack_client.types import QueryConfig
@@ -82,7 +80,7 @@ class InterioAgent:
             agent_id=self.agent_id,
             session_name=uuid.uuid4().hex,
         )
-        data_url = data_url_from_image(file_path)
+        data_url = data_url_from_file(file_path)
 
         message = {
             "role": "user",
@@ -149,7 +147,7 @@ class InterioAgent:
         )
 
         text = prompt.format(item=item, n=n)
-        data_url = data_url_from_image(file_path)
+        data_url = data_url_from_file(file_path)
 
         message = {
             "role": "user",

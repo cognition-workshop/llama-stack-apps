@@ -13,10 +13,8 @@ from pathlib import Path
 
 import fire
 
-from examples.interior_design_assistant.utils import (
-    create_single_turn,
-    data_url_from_image,
-)
+from examples.interior_design_assistant.utils import create_single_turn
+from examples.common.utils import data_url_from_file
 
 from llama_stack_client import LlamaStackClient
 from llama_stack_client.types import agent_create_params
@@ -57,7 +55,7 @@ def main(host: str, port: int, image_dir: str, output_dir: str):
                 {
                     "type": "image",
                     "url": {
-                        "uri": data_url_from_image(full_path),
+                        "uri": data_url_from_file(full_path),
                     },
                 },
                 {

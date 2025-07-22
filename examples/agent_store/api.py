@@ -19,7 +19,7 @@ from llama_stack_client.types.agent_create_params import AgentConfig
 
 from termcolor import colored
 
-from .utils import data_url_from_file
+from examples.common.utils import data_url_from_file
 
 load_dotenv()
 
