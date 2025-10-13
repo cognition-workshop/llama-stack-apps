@@ -16,10 +16,15 @@ from dotenv import load_dotenv
 from llama_stack_client import LlamaStackClient
 from llama_stack_client.types import Attachment, Document, QueryConfig, UserMessage
 from llama_stack_client.types.agent_create_params import AgentConfig
+from llama_stack_client.types.agents.turn_response_event_payload import (
+    AgentTurnResponseTurnCompletePayload,
+)
+from llama_stack_client.types.memory_retrieval_step import MemoryRetrievalStep
+from llama_stack_client.types.tool_execution_step import ToolExecutionStep
 
 from termcolor import colored
 
-from .utils import data_url_from_file
+from ..common_utils import data_url_from_file
 
 load_dotenv()
 
@@ -131,7 +136,9 @@ class AgentStore:
                 enable_session_persistence=True,
             )
         elif agent_type == AgentChoice.Memory:
-            vector_db_ids = agent_params.get("vector_db_ids", [])
+            vector_db_ids = (
+                agent_params.get("vector_db_ids", []) if agent_params else []
+            )
             toolgroups = [
                 {
                     "name": "builtin::rag",
@@ -166,7 +173,7 @@ class AgentStore:
 
         return agent_id
 
-    def create_session(self, agent_choice: str) -> str:
+    def create_session(self, agent_choice: AgentChoice) -> str:
         agent_id = self.agents[agent_choice]
         self.first_turn[agent_id] = True
         response = self.client.agents.session.create(
@@ -205,10 +212,10 @@ class AgentStore:
 
         return "memory_bank"
 
-    async def chat(self, agent_choice, message, attachments) -> str:
-        assert (
-            agent_choice in self.agents
-        ), f"Agent of type {agent_choice} not initialized"
+    async def chat(self, agent_choice, message, attachments) -> tuple[str, str]:
+        assert agent_choice in self.agents, (
+            f"Agent of type {agent_choice} not initialized"
+        )
         agent_id = self.agents[agent_choice]
 
         messages = []
@@ -241,17 +248,15 @@ class AgentStore:
         )
         for chunk in generator:
             event = chunk.event
-            event_type = event.payload.event_type
-            # FIXME: Use the correct event type
-            if event_type == "turn_complete":
-                turn = event.payload.turn
+            payload = event.payload
+            if isinstance(payload, AgentTurnResponseTurnCompletePayload):
+                turn = payload.turn
 
         inserted_context = ""
         for step in turn.steps:
-            # FIXME: Update to use typed step types instead of strings
-            if step.step_type == "memory_retrieval":
+            if isinstance(step, MemoryRetrievalStep):
                 inserted_context = step.inserted_context
-            if step.step_type == "tool_execution":
+            elif isinstance(step, ToolExecutionStep):
                 inserted_context = "\n".join([tr.content for tr in step.tool_responses])
 
         return turn.output_message.content, inserted_context
